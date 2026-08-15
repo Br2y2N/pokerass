@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Relógio de Torneio</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ================= TELA DE CONFIGURAÇÃO INICIAL ================= -->
+  <section id="setup-screen">
+    <div class="setup-card">
+      <div class="level-badge">🂡</div>
+      <h1>Novo torneio</h1>
+      <p class="subtitle">Configure os dados básicos. A estrutura de níveis pode ser editada depois, a qualquer momento.</p>
+
+      <div class="field-row">
+        <label for="setup-name">Nome do torneio</label>
+        <input type="text" id="setup-name" placeholder="Ex: Torneio de Sexta">
+      </div>
+      <div class="field-row">
+        <label for="setup-date">Data do evento</label>
+        <input type="date" id="setup-date">
+      </div>
+      <div class="field-row">
+        <label for="setup-players">Jogadores inscritos</label>
+        <input type="number" id="setup-players" min="0" value="0">
+      </div>
+      <div class="field-row">
+        <label for="setup-tables">Mesas ativas</label>
+        <input type="number" id="setup-tables" min="0" value="0">
+      </div>
+
+      <div class="btn-grid" style="margin-top:1.4rem;">
+        <button class="btn" id="setup-edit-levels">Editar estrutura de níveis</button>
+        <button class="btn btn-primary btn-full" id="setup-create">Criar torneio</button>
+      </div>
+      <p class="subtitle" id="setup-restore-hint" style="margin-top:1rem;"></p>
+      <div class="btn-grid">
+        <button class="btn" id="setup-restore">Restaurar torneio salvo</button>
+        <button class="btn" id="setup-import">Importar arquivo (.json)</button>
+      </div>
+      <input type="file" id="import-file-input" accept="application/json" class="hidden">
+    </div>
+  </section>
+
+  <!-- ================= APP (cabeçalho + painel + rodapé) ================= -->
+  <div id="app-shell" class="hidden">
+
+    <header id="app-header">
+      <div class="tournament-identity">
+        <span id="tournament-name">—</span>
+        <span id="tournament-date">—</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btn-fullscreen" title="Tela cheia">⛶ Tela cheia</button>
+        <button class="icon-btn op-only" id="btn-open-drawer" title="Painel do operador">⚙ Operador</button>
+      </div>
+    </header>
+
+    <!-- ================= PAINEL PRINCIPAL (exibição pública) ================= -->
+    <main id="main-display">
+      <div class="level-row">
+        <div class="level-badge" id="level-badge">1</div>
+        <div>
+          <div class="level-label">Nível atual</div>
+        </div>
+      </div>
+
+      <div id="timer-display">20:00</div>
+      <div id="timer-status">&nbsp;</div>
+
+      <div class="blinds-row">
+        <div class="blind-block">
+          <span class="blind-value" id="blind-sb">100</span>
+          <span class="blind-label">Small Blind</span>
+        </div>
+        <div class="blind-block">
+          <span class="blind-value" id="blind-bb">200</span>
+          <span class="blind-label">Big Blind</span>
+        </div>
+        <div class="blind-block">
+          <span class="blind-value" id="blind-ante">—</span>
+          <span class="blind-label">Ante</span>
+        </div>
+      </div>
+
+      <div id="next-level-preview">Próximo: <strong>—</strong></div>
+    </main>
+
+    <!-- ================= RODAPÉ DE ESTATÍSTICAS ================= -->
+    <footer id="stats-bar">
+      <div class="stat"><span class="stat-value" id="stat-registered">0</span><span class="stat-label">Inscritos</span></div>
+      <div class="stat"><span class="stat-value" id="stat-remaining">0</span><span class="stat-label">Restantes</span></div>
+      <div class="stat"><span class="stat-value" id="stat-tables">0</span><span class="stat-label">Mesas ativas</span></div>
+    </footer>
+  </div>
+
+  <!-- ================= OVERLAY DE INTERVALO ================= -->
+  <section id="break-overlay" class="hidden">
+    <div class="break-title">Intervalo em andamento</div>
+    <div id="break-timer">25:00</div>
+    <div id="break-return-time">Retorno previsto às —</div>
+  </section>
+
+  <!-- ================= GAVETA DO OPERADOR ================= -->
+  <aside id="operator-drawer">
+    <div class="drawer-header">
+      <h2>Painel do operador</h2>
+      <button class="icon-btn" id="btn-close-drawer">Fechar ✕</button>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Cronômetro</h3>
+      <div class="btn-grid">
+        <button class="btn btn-primary" id="op-start">▶ Iniciar</button>
+        <button class="btn" id="op-pause-resume">⏸ Pausar</button>
+        <button class="btn" id="op-prev-level">◀ Nível anterior</button>
+        <button class="btn" id="op-next-level">Próximo nível ▶</button>
+        <button class="btn" id="op-start-break">☕ Iniciar intervalo</button>
+        <button class="btn btn-danger" id="op-end-tournament">■ Encerrar torneio</button>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Ajuste fino do tempo</h3>
+      <div class="btn-grid">
+        <button class="btn" id="op-minus-1">−1 min</button>
+        <button class="btn" id="op-plus-1">+1 min</button>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Contagem de jogadores e mesas</h3>
+      <div class="field-row">
+        <label>Inscritos</label>
+        <div class="number-stepper">
+          <button id="reg-minus">−</button><span id="reg-value">0</span><button id="reg-plus">+</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>Restantes</label>
+        <div class="number-stepper">
+          <button id="rem-minus">−</button><span id="rem-value">0</span><button id="rem-plus">+</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>Mesas ativas</label>
+        <div class="number-stepper">
+          <button id="tab-minus">−</button><span id="tab-value">0</span><button id="tab-plus">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Estrutura</h3>
+      <div class="btn-grid">
+        <button class="btn btn-full" id="op-edit-levels">Editar níveis / intervalo</button>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Som</h3>
+      <div class="btn-grid">
+        <button class="btn btn-full" id="op-toggle-mute">🔊 Som ativado</button>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>Dados do torneio</h3>
+      <div class="btn-grid">
+        <button class="btn" id="op-export">⭳ Exportar (.json)</button>
+        <button class="btn" id="op-import">⭱ Importar (.json)</button>
+        <button class="btn btn-danger btn-full" id="op-new-tournament">Novo torneio (apagar atual)</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MODAL: EDITOR DE NÍVEIS ================= -->
+  <section id="levels-editor-modal" class="hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Estrutura de níveis</h2>
+        <button class="icon-btn" id="levels-modal-close">Fechar ✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <label for="break-after-input">Intervalo após o nível</label>
+          <input type="number" id="break-after-input" min="1" value="10">
+        </div>
+        <div class="field-row">
+          <label for="break-duration-input">Duração do intervalo (min)</label>
+          <input type="number" id="break-duration-input" min="1" value="25">
+        </div>
+        <table class="levels-table" id="levels-table">
+          <thead>
+            <tr>
+              <th>Nível</th><th>SB</th><th>BB</th><th>Ante</th><th>Min</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="levels-table-body"></tbody>
+        </table>
+        <button class="btn" id="levels-add-row" style="margin-top:0.75rem;">+ Adicionar nível</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="levels-generate">Gerar estrutura padrão</button>
+        <button class="btn btn-primary" id="levels-save">Salvar estrutura</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/operator.js"></script>
+</body>
+</html>
